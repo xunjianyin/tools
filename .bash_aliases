@@ -1,23 +1,8 @@
-# Make Bash history better
-export HISTCONTROL=ignoreboth:erasedups  # Ignore duplicates and commands starting with space
-export HISTSIZE=10000                   # Long history
-export HISTFILESIZE=20000               # Long history file
-shopt -s histappend                     # Append to history, don't overwrite
-
-# Colored prompt (example, customize as you like)
-PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-
-# Enable programmable completion features (if not already enabled in /etc/bash.bashrc)
-if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
-fi
+# ~/.bash_aliases
+# My custom Bash aliases and functions
 
 # =============================================================================
-# ALIASES - SHORTCUTS FOR COMMON COMMANDS
+# ALIASES
 # =============================================================================
 
 # --- Navigation & Listing ---
@@ -33,7 +18,7 @@ alias lsg='ll | grep --color=auto -i' # List and grep
 # --- File & Directory Management ---
 alias cp='cp -iv'          # Prompt before overwrite, verbose
 alias mv='mv -iv'          # Prompt before overwrite, verbose
-alias rm='rm -I'           # Prompt once before removing more than three files, or when removing recursively. Use 'rm -i' for per-file prompt.
+alias rm='rm -I'           # Prompt once before removing more than three files, or when removing recursively.
 alias mkdir='mkdir -pv'    # Create parent directories as needed, verbose
 
 # --- System & Info ---
@@ -43,7 +28,7 @@ alias dufh='du -sh * | sort -rh' # Disk usage of files/folders in current direct
 alias freeh='free -h'      # Free memory, human-readable
 alias psef='ps -ef | grep --color=auto -i' # Grep process list
 alias myip='curl -s ipinfo.io/ip || curl -s ifconfig.me' # Get public IP
-alias update='sudo apt update && sudo apt upgrade -y' # For Debian/Ubuntu systems. Change for other distros (e.g., `sudo dnf upgrade` for Fedora, `sudo pacman -Syu` for Arch)
+alias update='sudo apt update && sudo apt upgrade -y' # For Debian/Ubuntu. Adjust for other distros.
 alias cls='clear'
 alias c='clear'
 alias pingg='ping google.com'
@@ -85,13 +70,71 @@ alias gundo='git reset HEAD~' # Undo last commit, keep changes
 alias gclean='git clean -fd'  # Remove untracked files and directories
 
 # For GitHub CLI (gh) if installed
-alias ghprc='gh pr create'
-alias ghprl='gh pr list'
-alias ghprv='gh pr view'
-alias ghrepoweb='gh repo view --web' # Open current repo in browser
+if command -v gh &> /dev/null; then
+    alias ghprc='gh pr create'
+    alias ghprl='gh pr list'
+    alias ghprv='gh pr view'
+    alias ghrepoweb='gh repo view --web' # Open current repo in browser
+fi
+
+# --- Conda ---
+alias ca='conda activate'
+alias cdx='conda deactivate' # 'cd' is too common, 'cdeact' is also an option
+alias clse='conda env list'
+alias cenv='conda env list'
+alias cins='conda install'
+alias cunins='conda uninstall'
+alias ccreate='conda create -n'
+# Example: ccreate myenv python=3.10 numpy pandas -c conda-forge
+alias csearch='conda search'
+alias cupc='conda update conda'
+alias cupall='conda update --all'
+alias crmenv='conda env remove -n' # Remove environment
+
+# --- Standard Python venv & uv ---
+# `uv` is a fast Python package installer and resolver.
+# `uv venv` creates a standard Python virtual environment.
+if command -v uv &> /dev/null; then
+    alias uvv='uv venv' # Create venv (e.g., uvv .venv)
+    alias uva='source .venv/bin/activate' # Common activation path, adjust if your venv name differs
+                                        # You might prefer a function like `act <name>`
+    alias uvi='uv pip install'
+    alias uvu='uv pip uninstall'
+    alias uvl='uv pip list'
+    alias uvf='uv pip freeze'
+    alias uvsync='uv pip sync' # Sync environment from requirements file
+    alias uvtree='uv pip tree' # Show dependency tree
+    alias uvcompile='uv pip compile' # Compile requirements.txt to requirements.lock
+fi
+
+# --- Tmux (Terminal Multiplexer) ---
+# The main tmux command 't' is a function below for comprehensive session management.
+# Aliases for common operations:
+if command -v tmux &> /dev/null; then
+    alias tl='tmux ls'                      # List active tmux sessions
+    alias ta='tmux attach-session -t'       # Attach to a specific session: ta <session_name>
+    alias tat='tmux attach-session -t'      # (Alternative) Attach to a specific session: tat <session_name>
+    alias tn='tmux new-session -s'          # Create a new named session: tn <session_name>
+    alias td='tmux detach-client'           # Detach current client (use INSIDE tmux)
+    alias tkill='tmux kill-session -t'      # Kill a specific session: tkill <session_name>
+    alias tkillsrv='tmux kill-server'       # Kill the tmux server and all sessions
+
+    # Aliases for use INSIDE a tmux session:
+    alias tnw='tmux new-window -c "#{pane_current_path}"'             # New window (opens in current path)
+    alias trns='tmux rename-session'      # Rename current session: trns <new_name>
+    alias trnw='tmux rename-window'       # Rename current window: trnw <new_name>
+    alias tsph='tmux split-window -h -c "#{pane_current_path}"'      # Split pane horizontally (in current path)
+    alias tspv='tmux split-window -v -c "#{pane_current_path}"'      # Split pane vertically (in current path)
+    alias tsnxt='tmux next-window'        # Go to next window
+    alias tsprev='tmux previous-window'   # Go to previous window
+    alias tslw='tmux last-window'         # Go to last (previously selected) window
+    alias tkw='tmux kill-window'          # Kill current window (tmux kill-window -t :<current_window_id>)
+    alias tkp='tmux kill-pane'            # Kill current pane (tmux kill-pane -t :<current_pane_id>)
+fi
+# The main nvitop command 'nvt' is a function below to handle installation check
 
 # =============================================================================
-# FUNCTIONS - MORE POWERFUL CUSTOM COMMANDS (CAN TAKE ARGUMENTS)
+# FUNCTIONS
 # =============================================================================
 
 # --- Directory & File Operations ---
@@ -119,12 +162,9 @@ grepdir() {
     else
         grep -rIl --color=auto --include="$file_glob" "$pattern" "$search_dir"
     fi
-    # -r: recursive
-    # -I: ignore binary files (GNU grep specific, might not be on macOS)
-    # -l: print only filenames with matches
 }
 
-# Backup a file with a timestamp
+# Backup a file or directory with a timestamp
 # Usage: backupfile <filename_or_dirname>
 backupfile() {
     if [ ! -e "$1" ]; then
@@ -156,12 +196,12 @@ extract() {
         *.tar.gz|*.tgz)   tar xvzf "$1" ;;
         *.tar.xz|*.txz)   tar xvJf "$1" ;; # Added xz
         *.bz2)            bunzip2 "$1" ;;
-        *.rar)            unrar x "$1" ;;
+        *.rar)            unrar x "$1" ;; # Needs 'unrar' command
         *.gz)             gunzip "$1" ;;
         *.tar)            tar xvf "$1" ;;
         *.zip|*.jar)      unzip "$1" ;; # Added jar
         *.Z)              uncompress "$1" ;;
-        *.7z)             7z x "$1" ;;
+        *.7z)             7z x "$1" ;; # Needs 'p7zip-full' package usually
         *)                echo "Don't know how to extract '$1'..." ;;
     esac
 }
@@ -171,6 +211,22 @@ extract() {
 lsbig() {
     local num_items=${1:-20}
     find . -type f -print0 | xargs -0 du -h | sort -rh | head -n "$num_items"
+}
+
+# Recursively list files/directories up to N levels (uses 'tree' if available)
+# Usage: lstree [depth] [directory]
+lstree() {
+    local depth="${1:-2}"         # Default depth to 2 levels
+    local target_dir="${2:-.}"    # Default target to current directory
+
+    if ! command -v tree &> /dev/null; then
+        echo "'tree' command not found. Listing with 'find' (basic output):"
+        find "$target_dir" -maxdepth "$depth" -print
+        echo -e "\nFor a better hierarchical view, please install 'tree'."
+        echo "Example: sudo apt install tree  OR  sudo dnf install tree OR brew install tree"
+        return 1
+    fi
+    tree -L "$depth" -aF "$target_dir" # -a for all files, -F for type indicators
 }
 
 
@@ -208,11 +264,13 @@ setproxyhost() {
     local auth_proxy_address=""
 
     # !!! IMPORTANT: REPLACE WITH YOUR ACTUAL PROXY DETAILS IF NEEDED !!!
+    # Example: local proxy_user="YOUR_USERNAME"
+    # Example: local proxy_pass="YOUR_PASSWORD"
     if [ -n "$3" ] && [ -n "$4" ]; then # If username and password are provided
         auth_proxy_address="$3:$4@$proxy_address"
     elif [ -n "$3" ]; then # If only username is provided
-        echo "Warning: Username provided without a password. Assuming username is part of host or proxy needs only username."
-        auth_proxy_address="$3@$proxy_address" # Or handle as an error specific to your proxy
+        # This case might mean username is part of host or no password needed with user
+        auth_proxy_address="$3@$proxy_address"
     fi
 
     if [ -n "$auth_proxy_address" ]; then
@@ -243,7 +301,7 @@ unsetproxy() {
     echo "Proxy environment variables unset."
 }
 
-# SOCKS5 Proxy (Example with port 1080)
+# SOCKS5 Proxy
 # Usage: setsocks <socks_host> <socks_port> [username] [password]
 setsocks() {
     if [ -z "$1" ] || [ -z "$2" ]; then
@@ -253,6 +311,7 @@ setsocks() {
     local socks_address="$1:$2"
     local auth_socks_address=""
 
+    # !!! IMPORTANT: REPLACE WITH YOUR ACTUAL SOCKS DETAILS IF NEEDED !!!
     if [ -n "$3" ] && [ -n "$4" ]; then
         auth_socks_address="$3:$4@$socks_address"
     elif [ -n "$3" ]; then
@@ -267,9 +326,6 @@ setsocks() {
         export all_proxy="$ALL_PROXY"
     fi
     echo "SOCKS5 proxy set to: $ALL_PROXY"
-    # Note: Some applications might need http_proxy/https_proxy to point to socks proxy
-    # e.g. export http_proxy="socks5h://user:pass@host:port"
-    # This function sets ALL_PROXY which is respected by curl, git, etc.
 }
 
 unsetsocks() {
@@ -288,29 +344,41 @@ conn() {
     fi
 }
 
-# =============================================================================
-# PYTHON & VIRTUAL ENVIRONMENT MANAGEMENT
-# =============================================================================
+# --- Software Installation & Management ---
+# Download and prepare Anaconda installer
+get_anaconda() {
+    local anaconda_url="https://repo.anaconda.com/archive/Anaconda3-2024.10-1-Linux-x86_64.sh" # URL provided by user
+    local installer_name
+    installer_name=$(basename "$anaconda_url")
+    local download_dir="${1:-$HOME/Downloads/Installers}" # Default download directory
 
-# --- Conda ---
-# Make sure conda is initialized first. If not, run `conda init bash` once.
-# The following aliases assume conda base environment is not auto-activated,
-# or you want explicit commands.
+    echo "Anaconda Installer URL: $anaconda_url"
+    echo "Note: This URL is for a specific version. For the latest, please check the Anaconda website."
 
-alias ca='conda activate'
-alias cdx='conda deactivate' # 'cd' is too common, 'cdeact' is also an option
-alias clse='conda env list'
-alias cenv='conda env list'
-alias cins='conda install'
-alias cunins='conda uninstall'
-alias ccreate='conda create -n'
-# Example: ccreate myenv python=3.10 numpy pandas -c conda-forge
-alias csearch='conda search'
-alias cupc='conda update conda'
-alias cupall='conda update --all'
-alias crmenv='conda env remove -n' # Remove environment
+    if [ ! -d "$download_dir" ]; then
+        mkdir -p "$download_dir"
+        echo "Created download directory: $download_dir"
+    fi
 
-# Function to create conda env and install common packages
+    echo "Downloading Anaconda installer to $download_dir/$installer_name..."
+    wget -P "$download_dir" "$anaconda_url"
+
+    if [ -f "$download_dir/$installer_name" ]; then
+        echo "Download complete: $download_dir/$installer_name"
+        chmod +x "$download_dir/$installer_name"
+        echo "Installer made executable."
+        echo -e "\nTo install Anaconda, run:"
+        echo "  bash $download_dir/$installer_name"
+        echo "Follow the on-screen prompts during installation."
+        echo "It's recommended to NOT let the installer initialize conda by modifying your shell rc file automatically if you prefer manual setup or already have one."
+    else
+        echo "Error: Anaconda installer download failed."
+        return 1
+    fi
+}
+
+# --- Python & Virtual Environment Management ---
+# Create Conda environment and install common packages
 # Usage: mkcenv <env_name> [python_version=3.10] [package1 package2 ...]
 mkcenv() {
     local env_name="$1"
@@ -330,9 +398,7 @@ mkcenv() {
     conda create -n "$env_name" python="$python_version" -y
     if [ $? -eq 0 ]; then
         echo "Activating environment: $env_name"
-        # Conda activate might not work directly in scripts this way always,
-        # but user can manually activate. For direct activation in script,
-        # one might need: eval "$(conda shell.bash hook)" then conda activate
+        # For direct activation in script, one might need: eval "$(conda shell.bash hook)" then conda activate
         conda activate "$env_name"
         if [ "$#" -gt 0 ]; then
             echo "Installing packages: $@"
@@ -345,12 +411,8 @@ mkcenv() {
 }
 
 
-# --- Standard Python venv & uv ---
-# `uv` is a fast Python package installer and resolver.
-# `uv venv` creates a standard Python virtual environment.
-
 # Create Python virtual environment (using python3 -m venv) and optionally activate
-# Usage: mkvenv [env_name] [--no-activate]
+# Usage: mkstdvenv [env_name] [--no-activate]
 # Default env_name is '.venv'
 mkstdvenv() {
     local env_name="${1:-.venv}" # Default to '.venv'
@@ -380,19 +442,8 @@ mkstdvenv() {
     fi
 }
 
-# Aliases for uv (if you have it installed: `pip install uv` or `cargo install uv`)
+# uv related functions (conditional on uv installation)
 if command -v uv &> /dev/null; then
-    alias uvv='uv venv' # Create venv (e.g., uvv .venv)
-    alias uva='source .venv/bin/activate' # Common activation path, adjust if your venv name differs
-                                        # You might prefer a function like `activate_venv <name>`
-    alias uvi='uv pip install'
-    alias uvu='uv pip uninstall'
-    alias uvl='uv pip list'
-    alias uvf='uv pip freeze'
-    alias uvsync='uv pip sync' # Sync environment from requirements file
-    alias uvtree='uv pip tree' # Show dependency tree
-    alias uvcompile='uv pip compile' # Compile requirements.txt to requirements.lock
-
     # Create venv using uv and activate
     # Usage: mkuvenv [env_name=.venv] [--no-activate]
     mkuvenv() {
@@ -400,7 +451,7 @@ if command -v uv &> /dev/null; then
         local activate_env=true
 
         if [ "$1" == "--no-activate" ]; then
-            env_name=".venv"
+            env_name=".venv" # Reset to default if first arg is the flag
             activate_env=false
         elif [ "$2" == "--no-activate" ]; then
             activate_env=false
@@ -458,21 +509,110 @@ if command -v uv &> /dev/null; then
 fi
 
 
+# --- Tmux (Terminal Multiplexer) ---
+# Main tmux utility function: start new or attach to existing session.
+# Prompts to install if tmux is missing.
+# Usage: t [session_name]
+t() {
+    if ! command -v tmux &> /dev/null; then
+        echo "tmux could not be found."
+        read -r -p "Do you want to try installing it? (e.g., sudo apt install tmux) [y/N] " response
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+            # Attempt to install based on common package managers
+            if command -v apt &> /dev/null; then sudo apt update && sudo apt install tmux -y;
+            elif command -v dnf &> /dev/null; then sudo dnf install tmux -y;
+            elif command -v yum &> /dev/null; then sudo yum install tmux -y;
+            elif command -v pacman &> /dev/null; then sudo pacman -S tmux --noconfirm;
+            elif command -v brew &> /dev/null; then brew install tmux;
+            else echo "Package manager not recognized. Please install tmux manually."; return 1; fi
+
+            if ! command -v tmux &> /dev/null; then
+                 echo "tmux installation failed or was not completed. Please install it manually."
+                 return 1
+            fi
+            echo "tmux installed successfully. Please run the command 't' again."
+        else
+            echo "Please install tmux to use this command."
+            return 1
+        fi
+        return 0 # Exit after install attempt message
+    fi
+
+    local session_name="$1"
+    # Check if already inside a tmux session
+    if [ -n "$TMUX" ]; then
+        if [ -z "$session_name" ]; then # Called as 't' inside tmux
+            echo "Already inside a tmux session. Current session: $TMUX_PANE"
+            echo "Use 'td' to detach, or tmux keybindings (e.g., Ctrl-b d)."
+            return 0
+        else # Called as 't <something>' inside tmux
+            echo "Already inside a tmux session. To switch sessions, detach ('td') and re-attach, or use tmux keybindings (e.g. Ctrl-b s)."
+            return 0
+        fi
+    fi
+
+    if [ -z "$session_name" ]; then # No session name provided (and not inside tmux)
+        if tmux has-session 2>/dev/null; then
+            local num_sessions
+            num_sessions=$(tmux ls 2>/dev/null | wc -l)
+            if [ "$num_sessions" -eq 1 ]; then
+                local only_session_name
+                only_session_name=$(tmux ls -F "#{session_name}" 2>/dev/null)
+                echo "Attaching to the only existing session: $only_session_name"
+                tmux attach-session # Attaches to the only session or last active
+            else
+                echo "Available sessions:"
+                tmux ls
+                echo "To attach, use 't <session_name>', 'ta <session_name>', or 'tmux attach-session -t <session_name>'."
+                echo "Attempting to attach to the last active session..."
+                tmux attach-session # Attaches to last active by default
+            fi
+        else
+            # No sessions running, create a new unnamed one
+            echo "No sessions running. Creating and attaching to a new session..."
+            tmux new-session
+        fi
+    else # Session name provided (and not inside tmux)
+        if tmux has-session -t "=$session_name" 2>/dev/null; then # Check if session exists (exact match)
+            echo "Attaching to existing tmux session: $session_name"
+            tmux attach-session -t "$session_name"
+        else
+            echo "Creating and attaching to new tmux session: $session_name"
+            tmux new-session -s "$session_name"
+        fi
+    fi
+}
+
+# --- Nvitop (NVIDIA GPU Monitoring) ---
+# Main nvitop utility function: run nvitop, prompting for install if not found
+# Usage: nvt [nvitop_arguments]
+nvt() {
+    if ! command -v nvitop &> /dev/null; then
+        echo "nvitop could not be found."
+        read -r -p "Do you want to try installing it? (e.g., pip install nvitop) [y/N] " response
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+            # Attempt to install using pip or pip3
+            if command -v pip3 &> /dev/null; then pip3 install nvitop;
+            elif command -v pip &> /dev/null; then pip install nvitop;
+            else echo "pip (or pip3) could not be found. Please install nvitop manually (e.g., using your system's package manager or pip)."; return 1; fi
+
+            if ! command -v nvitop &> /dev/null; then
+                 echo "nvitop installation failed or was not completed. Please ensure it's in your PATH."
+                 return 1
+            fi
+            echo "nvitop installed successfully. Please run the command 'nvt' again."
+        else
+            echo "Please install nvitop to use this command."
+            return 1
+        fi
+        return 0 # Exit after install attempt message
+    fi
+    # Execute nvitop with any arguments passed to this function
+    nvitop "$@"
+}
+
+
 # =============================================================================
 # END OF CUSTOMIZATIONS
 # =============================================================================
-
-# Source global bashrc if it exists
-if [ -f /etc/bashrc ]; then
-        . /etc/bashrc
-fi
-
-# Add user's private bin if it exists
-if [ -d "$HOME/bin" ] ; then
-    PATH="$HOME/bin:$PATH"
-fi
-if [ -d "$HOME/.local/bin" ] ; then
-    PATH="$HOME/.local/bin:$PATH"
-fi
-
-echo "Custom .bashrc loaded successfully!" # Optional: for confirmation
+echo "Personalized .bash_aliases loaded! 🚀" # Optional: for confirmation
