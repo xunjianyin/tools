@@ -611,6 +611,87 @@ nvt() {
     nvitop "$@"
 }
 
+# ------ rm --------
+trash() {
+    local trash_dir="${HOME}/.Trash"
+    mkdir -p "$trash_dir" || {
+        echo "Error: Could not create trash directory '$trash_dir'" >&2
+        return 1
+    }
+
+    local r_flag=0
+    local f_flag=0
+    local v_flag=0
+    local files=()
+
+    while getopts "rfv" opt; do
+        case "$opt" in
+            r) r_flag=1 ;;
+            f) f_flag=1 ;;
+            v) v_flag=1 ;;
+            \?)
+                echo "Usage: rm [OPTION]... [FILE]..." >&2
+                return 1
+                ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
+    # Validate inputs
+    if [ "$#" -eq 0 ]; then
+        echo "rm (trash): missing operand" >&2
+        echo "Usage: rm [OPTION]... [FILE]..." >&2
+        return 1
+    fi
+
+    # Handle the files
+    for file in "$@"; do
+        if [ ! -e "$file" ] && [ ! -L "$file" ]; then
+            if [ "$f_flag" -eq 1 ]; then
+                continue
+            else
+                echo "rm (trash): cannot remove '$file': No such file or directory" >&2
+                return 1
+            fi
+        fi
+
+        # Get absolute path
+        local real_file_path
+        real_file_path=$(realpath -- "$file" 2>/dev/null || echo "$file")
+        local real_trash_path
+        real_trash_path=$(realpath -- "$trash_dir" 2>/dev/null || echo "$trash_dir")
+
+        # Refuse to move trash dir itself or HOME/other protected directories
+        if [[ "$real_file_path" == "$real_trash_path" ]] || [[ "$real_file_path" == "$(dirname "$real_trash_path")" ]] || [[ "$real_file_path" == "$HOME" ]] ; then
+            echo "rm (trash): Refusing to move directory '$file' or home itself!" >&2
+            return 1
+        fi
+
+        # Build name with timestamp
+        local basename
+        basename=$(basename -- "$file")
+        local timestamp
+        timestamp=$(date +%Y%m%d_%H%M%S_%N)
+        local trashed_file_name="${basename}.${timestamp}"
+        local full_trashed_path="${trash_dir}/${trashed_file_name}"
+
+        # verbose mode
+        if [ "$v_flag" -eq 1 ]; then
+            echo "rm (trash): moving '$file' to '$full_trashed_path'"
+        fi
+
+        # Move to trash
+        if mv -- "$file" "$full_trashed_path"; then
+            if [ "$v_flag" -eq 1 ]; then
+                echo "rm (trash): moved '$file' to '$full_trashed_path'"
+            fi
+        else
+            echo "rm (trash): error moving '$file' to trash" >&2
+            return 1
+        fi
+    done
+}
+alias rm='trash'
 
 # =============================================================================
 # END OF CUSTOMIZATIONS
