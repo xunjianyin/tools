@@ -515,4 +515,4 @@ nvt() { # Run nvitop, prompting for install if not found
 # =============================================================================
 # END OF CUSTOMIZATIONS
 # =============================================================================
-echo "Personalized .bash_aliases loaded! 🚀 (Safe 'rm' is active, use 'cleartrash' to empty ~/.Trash) --- greetings from Xunjian"
+echo ".bash_aliases loaded! ('rm': use 'cleartrash' to empty ~/.Trash) --- greetings from Xunjian"
